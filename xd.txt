@@ -1,0 +1,31 @@
+//As long as the droplet exists...
+    while(drop.volume > minVol){
+
+      glm::ivec2 ipos = drop.pos;                   //Floored Droplet Initial Position
+      glm::vec3 n = surfaceNormal(ipos.x, ipos.y);  //Surface Normal at Position
+
+      //Accelerate particle using newtonian mechanics using the surface normal.
+      drop.speed += dt*glm::vec2(n.x, n.z)/(drop.volume*density);//F = ma, so a = F/m
+      drop.pos   += dt*drop.speed;
+      drop.speed *= (1.0-dt*friction);       //Friction Factor
+
+      /*
+        Note: For multiplied factors (e.g. friction, evaporation)
+        time-scaling is correctly implemented like above.
+      */
+
+      //Check if Particle is still in-bounds
+      if(!glm::all(glm::greaterThanEqual(drop.pos, glm::vec2(0))) ||
+         !glm::all(glm::lessThan(drop.pos, dim))) break;
+
+      //Compute sediment capacity difference
+      float maxsediment = drop.volume*glm::length(drop.speed)*(heightmap[ipos.x][ipos.y]-heightmap[(int)drop.pos.x][(int)drop.pos.y]);
+      if(maxsediment < 0.0) maxsediment = 0.0;
+      float sdiff = maxsediment - drop.sediment;
+
+      //Act on the Heightmap and Droplet!
+      drop.sediment += dt*depositionRate*sdiff;
+      heightmap[ipos.x][ipos.y] -= dt*drop.volume*depositionRate*sdiff;
+
+      //Evaporate the Droplet (Note: Proportional to Volume! Better: Use shape factor to make proportional to the area instead.)
+      drop.volume *= (1.0-dt*evapRate);
