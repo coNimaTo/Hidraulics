@@ -8,15 +8,14 @@ evaporation_rate = 0.025
 # particle dynamics
 dt = 0.5
 g = 10
-z_scale = 10 # el terreno esta normalizado, esto define una "altura"
+z_scale = 5 # el terreno esta normalizado, esto define una "altura"
 friction = 0.01
-
 
 min_speed = 0.01
 min_slope = 0.1
 
 # erosion/sedimentation
-erosion_rate = deposition_rate = .5
+erosion_rate = deposition_rate = .1
 initial_sediment = 0
 
 
