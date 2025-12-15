@@ -15,7 +15,7 @@ min_speed = 0.01
 min_slope = 0.1
 
 # erosion/sedimentation
-erosion_rate = deposition_rate = .1
+erosion_rate = deposition_rate = .25
 initial_sediment = 0
 
 
@@ -23,7 +23,7 @@ class droplet():
     """
     Water droplet
     """
-    def __init__(self, height, width):
+    def __init__(self, height, width, erosion_kernel = np.array([1])):
         self.inbounds = True
         # Dsp esto lo puede tener una clase que sea el terreno
         self.height = height
@@ -31,7 +31,14 @@ class droplet():
         
         self.sediment = initial_sediment # masa de sedimento
         self.volume = initial_volume # tamaño gota, se ira evaporando
-
+        
+        # Erosion Kernel
+        if erosion_kernel.shape[0] == erosion_kernel.shape[1]:
+            self.erosion_radius = (erosion_kernel.shape[0]-1)//2
+            self.kernel = np.array(erosion_kernel)
+        else:
+            print("Kernel Error, not square")
+        
         # Variables dinamicas de la gota
         self.ipos = np.random.randint([0,0],[height-1, width-1], 2)
         self.pos = np.array(self.ipos, float)
@@ -76,7 +83,7 @@ class droplet():
             return False
             
 
-    def step(self, terrain, grad_terrain, dt):
+    def step(self, terrain, grad_terrain):
         
         if not self.inbounds:
             print("step not executed, out of bounds")
@@ -111,16 +118,25 @@ class droplet():
             # If it goes uphill all sediment is deposited until Deltah gets to 0
             if Deltah > 0:
                 s_diff = min(self.sediment, Deltah) * deposition_rate*dt
+                terrain[*self.ipos] += s_diff
+
             # If it carries more sediment than its capacity adjust until capacity or Deltah gets to 0
             elif self.sediment > capacity:
                 s_diff = min((self.sediment-capacity), -Deltah) * deposition_rate*dt
+                terrain[*self.ipos] += s_diff
+
             # ---Erosion
             # If it carries less sediment than its capacity adjust until capacity
             else:
                 s_diff = - min((capacity-self.sediment), -Deltah) * erosion_rate*dt
-    
-            terrain[*self.ipos] += s_diff
+
+                xi, yi = self.ipos
+                for i in range(-self.erosion_radius, self.erosion_radius):
+                    for j in range(-self.erosion_radius, self.erosion_radius):
+                        terrain[xi+i, yi+j] += s_diff * self.kernel[i + self.erosion_radius, j + self.erosion_radius]
+
             self.sediment -= s_diff
+            
 
         # Set new index position
         self.ipos = np.array(self.pos, int)
