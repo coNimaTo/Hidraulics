@@ -6,7 +6,7 @@ min_volume = 0.1
 evaporation_rate = 0.025
 
 # particle dynamics
-dt = 0.5
+dt = 0.25
 g = 10
 z_scale = 5 # el terreno esta normalizado, esto define una "altura"
 friction = 0.01
@@ -15,7 +15,9 @@ min_speed = 0.01
 min_slope = 0.1
 
 # erosion/sedimentation
-erosion_rate = deposition_rate = .25
+p_c = 8
+erosion_rate = 0.7 
+deposition_rate = .25
 initial_sediment = 0
 
 
@@ -112,23 +114,23 @@ class droplet():
             if speed > self.max_speed:
                 self.max_speed = speed
 
-            capacity = -Deltah * speed * self.volume
+            capacity = -Deltah * speed * self.volume * p_c
 
             # ---Sedimentation
             # If it goes uphill all sediment is deposited until Deltah gets to 0
             if Deltah > 0:
-                s_diff = min(self.sediment, Deltah) * deposition_rate*dt
+                s_diff = min(self.sediment, Deltah) * deposition_rate
                 terrain[*self.ipos] += s_diff
 
             # If it carries more sediment than its capacity adjust until capacity or Deltah gets to 0
             elif self.sediment > capacity:
-                s_diff = min((self.sediment-capacity), -Deltah) * deposition_rate*dt
+                s_diff = min((self.sediment-capacity), -Deltah) * deposition_rate
                 terrain[*self.ipos] += s_diff
 
             # ---Erosion
             # If it carries less sediment than its capacity adjust until capacity
             else:
-                s_diff = - min((capacity-self.sediment), -Deltah) * erosion_rate*dt
+                s_diff = - min((capacity-self.sediment), -Deltah) * erosion_rate
 
                 xi, yi = self.ipos
                 for i in range(-self.erosion_radius, self.erosion_radius):
